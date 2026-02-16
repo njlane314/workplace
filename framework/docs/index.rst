@@ -42,7 +42,7 @@ Each module typically contains:
 
 * ``include/`` for public headers (``.hh``).
 * ``src/`` for implementations (``.cpp``).
-* ``macros/`` for ROOT-style macros and scripts.
+* ``macro_packs/default/`` for ROOT-style macros and scripts.
 
 Supporting folders include:
 

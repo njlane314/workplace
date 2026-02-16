@@ -36,7 +36,7 @@ jobs:
 
   sync-macros:
     runs-on: ubuntu-latest
-    if: ${{ secrets.SPLIT_REPO_TOKEN != '' && secrets.MACROS_REPO != '' }}
+    if: ${{ secrets.SPLIT_REPO_TOKEN != '' && (secrets.MACROS_REPO != '' || secrets.DEPENDENCIES_REPO != '') }}
     steps:
       - name: Checkout monorepo
         uses: actions/checkout@v4
@@ -46,7 +46,7 @@ jobs:
       - name: Split and push macro pack history
         env:
           BRANCH_NAME: ${{ github.ref_name }}
-          REPO_NAME: ${{ secrets.MACROS_REPO }}
+          REPO_NAME: ${{ secrets.MACROS_REPO != '' && secrets.MACROS_REPO || secrets.DEPENDENCIES_REPO }}
           TOKEN: ${{ secrets.SPLIT_REPO_TOKEN }}
         run: |
           set -euo pipefail

@@ -1,6 +1,5 @@
 name: Sync individual repos
 
-
 on:
   push:
     branches:

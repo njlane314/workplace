@@ -1,0 +1,54 @@
+name: Sync individual repos
+
+on:
+  push:
+    branches:
+      - main
+      - work
+    paths:
+      - framework/**
+      - macro_packs/default/**
+      - .github/workflows/sync-individual-repos.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync-framework:
+    runs-on: ubuntu-latest
+    if: ${{ secrets.SPLIT_REPO_TOKEN != '' && secrets.FRAMEWORK_REPO != '' }}
+    steps:
+      - name: Checkout monorepo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Split and push framework history
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+          REPO_NAME: ${{ secrets.FRAMEWORK_REPO }}
+          TOKEN: ${{ secrets.SPLIT_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          git branch split-framework "$(git subtree split --prefix=framework)"
+          git push --force "https://x-access-token:${TOKEN}@github.com/${REPO_NAME}.git" "split-framework:${BRANCH_NAME}"
+
+  sync-macros:
+    runs-on: ubuntu-latest
+    if: ${{ secrets.SPLIT_REPO_TOKEN != '' && secrets.MACROS_REPO != '' }}
+    steps:
+      - name: Checkout monorepo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Split and push macro pack history
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+          REPO_NAME: ${{ secrets.MACROS_REPO }}
+          TOKEN: ${{ secrets.SPLIT_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          git branch split-macros "$(git subtree split --prefix=macro_packs/default)"
+          git push --force "https://x-access-token:${TOKEN}@github.com/${REPO_NAME}.git" "split-macros:${BRANCH_NAME}"

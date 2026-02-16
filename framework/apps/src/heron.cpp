@@ -34,7 +34,7 @@ const char *kUsageMacro =
     "Usage: heron macro MACRO.C [CALL]\n"
     "       heron macro list\n"
     "\nEnvironment:\n"
-    "  HERON_MACRO_LIBRARY_DIR  In-repo macro library directory (default: <repo>/macros/macro/library)\n"
+    "  HERON_MACRO_LIBRARY_DIR  In-repo macro library directory (default: <repo>/macro_packs/default/macro/library)\n"
     "  HERON_MACRO_PATH         Colon-separated extra macro directories (searched after library)\n"
     "  Manifest: <macro_library>/manifest.tsv with columns: name<TAB>macro[<TAB>call]\n"
     "  HERON_PLOT_BASE    Plot base directory (default: <repo>/scratch/plot)\n"
@@ -137,6 +137,7 @@ std::filesystem::path find_repo_root()
         for (int i = 0; i < 6; ++i)
         {
             if (std::filesystem::exists(base / "macros/plot/macro/.plot_driver.retired") ||
+                std::filesystem::exists(base / "macro_packs/default/plot/macro/.plot_driver.retired") ||
                 std::filesystem::exists(base / "plot/macro/.plot_driver.retired"))
             {
                 return base;
@@ -192,6 +193,13 @@ std::filesystem::path macro_repo_dir(const std::filesystem::path &repo_root)
     {
         return macro_submodule;
     }
+
+    const auto macro_pack = repo_root / "macro_packs" / "default";
+    if (std::filesystem::exists(macro_pack))
+    {
+        return macro_pack;
+    }
+
     return repo_root;
 }
 
@@ -553,21 +561,25 @@ bool is_plot_macro(const std::filesystem::path &repo_root,
 {
     std::error_code ec;
     const auto rel = std::filesystem::relative(macro_path, repo_root, ec);
-    if (ec)
+    if (ec || rel.empty())
     {
         return false;
     }
-    if (rel.empty())
+
+    std::vector<std::string> parts;
+    for (const auto &part : rel)
     {
-        return false;
+        parts.emplace_back(part.string());
     }
-    auto it = rel.begin();
-    if (it == rel.end() || *it != "plot")
+
+    for (size_t i = 0; i + 1 < parts.size(); ++i)
     {
-        return false;
+        if (parts[i] == "plot" && parts[i + 1] == "macro")
+        {
+            return true;
+        }
     }
-    ++it;
-    return it != rel.end() && *it == "macro";
+    return false;
 }
 
 int exec_root_macro(const std::filesystem::path &repo_root,

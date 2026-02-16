@@ -9,6 +9,27 @@ _heron()
 
   local commands="art sample event macro paths env help -h --help"
 
+
+  _heron_has_macros()
+  {
+    local root="$1"
+    [[ -d "${root}/macros/plot/macro" || -d "${root}/macros/evd/macro" || -d "${root}/macros/standalone/macro" || -d "${root}/macros/io/macro" || -d "${root}/macro_packs/default/plot/macro" || -d "${root}/macro_packs/default/evd/macro" || -d "${root}/macro_packs/default/standalone/macro" || -d "${root}/macro_packs/default/io/macro" ]]
+  }
+
+  _heron_macro_root()
+  {
+    local root="$1"
+    if [[ -d "${root}/macros/plot/macro" || -d "${root}/macros/evd/macro" || -d "${root}/macros/standalone/macro" || -d "${root}/macros/io/macro" ]]; then
+      printf "%s" "${root}/macros"
+      return 0
+    fi
+    if [[ -d "${root}/macro_packs/default/plot/macro" || -d "${root}/macro_packs/default/evd/macro" || -d "${root}/macro_packs/default/standalone/macro" || -d "${root}/macro_packs/default/io/macro" ]]; then
+      printf "%s" "${root}/macro_packs/default"
+      return 0
+    fi
+    return 1
+  }
+
   _heron_find_root()
   {
     local dir
@@ -17,12 +38,12 @@ _heron()
     local exe
     local exe_dir
 
-    if [[ -n "${HERON_REPO_ROOT:-}" && ( -d "${HERON_REPO_ROOT}/macros/plot/macro" || -d "${HERON_REPO_ROOT}/macros/evd/macro" || -d "${HERON_REPO_ROOT}/macros/standalone/macro" || -d "${HERON_REPO_ROOT}/macros/io/macro" ) ]]; then
+    if [[ -n "${HERON_REPO_ROOT:-}" ]] && _heron_has_macros "${HERON_REPO_ROOT}"; then
       printf "%s" "${HERON_REPO_ROOT}"
       return 0
     fi
 
-    if [[ -n "${HERON_ROOT:-}" && ( -d "${HERON_ROOT}/macros/plot/macro" || -d "${HERON_ROOT}/macros/evd/macro" || -d "${HERON_ROOT}/macros/standalone/macro" || -d "${HERON_ROOT}/macros/io/macro" ) ]]; then
+    if [[ -n "${HERON_ROOT:-}" ]] && _heron_has_macros "${HERON_ROOT}"; then
       printf "%s" "${HERON_ROOT}"
       return 0
     fi
@@ -32,7 +53,7 @@ _heron()
       exe_dir="$(dirname "$(readlink -f "${exe}" 2>/dev/null || printf "%s" "${exe}")")"
       dir="${exe_dir}"
       while [[ -n "${dir}" && "${dir}" != "/" ]]; do
-        if [[ -d "${dir}/macros/plot/macro" || -d "${dir}/macros/evd/macro" || -d "${dir}/macros/standalone/macro" || -d "${dir}/macros/io/macro" ]]; then
+        if _heron_has_macros "${dir}"; then
           printf "%s" "${dir}"
           return 0
         fi
@@ -42,7 +63,7 @@ _heron()
 
     dir="${PWD}"
     while [[ "${dir}" != "/" ]]; do
-      if [[ -d "${dir}/macros/plot/macro" || -d "${dir}/macros/evd/macro" || -d "${dir}/macros/standalone/macro" || -d "${dir}/macros/io/macro" ]]; then
+      if _heron_has_macros "${dir}"; then
         printf "%s" "${dir}"
         return 0
       fi
@@ -61,7 +82,13 @@ _heron()
 
     repo_root="$(_heron_find_root 2>/dev/null || true)"
     if [[ -n "${repo_root}" ]]; then
-      macro_dir="${repo_root}/macros/plot/macro"
+      local macro_root
+      macro_root="$(_heron_macro_root "${repo_root}" 2>/dev/null || true)"
+      if [[ -z "${macro_root}" ]]; then
+        return 0
+      fi
+
+      macro_dir="${macro_root}/plot/macro"
       if [[ -d "${macro_dir}" ]]; then
         for macro in "${macro_dir}"/*.C; do
           if [[ -f "${macro}" ]]; then
@@ -69,7 +96,7 @@ _heron()
           fi
         done
       fi
-      macro_dir="${repo_root}/macros/standalone/macro"
+      macro_dir="${macro_root}/standalone/macro"
       if [[ -d "${macro_dir}" ]]; then
         for macro in "${macro_dir}"/*.C; do
           if [[ -f "${macro}" ]]; then
@@ -77,7 +104,7 @@ _heron()
           fi
         done
       fi
-      evd_dir="${repo_root}/macros/evd/macro"
+      evd_dir="${macro_root}/evd/macro"
       if [[ -d "${evd_dir}" ]]; then
         for macro in "${evd_dir}"/*.C; do
           if [[ -f "${macro}" ]]; then
@@ -85,7 +112,7 @@ _heron()
           fi
         done
       fi
-      macro_dir="${repo_root}/macros/io/macro"
+      macro_dir="${macro_root}/io/macro"
       if [[ -d "${macro_dir}" ]]; then
         for macro in "${macro_dir}"/*.C; do
           if [[ -f "${macro}" ]]; then

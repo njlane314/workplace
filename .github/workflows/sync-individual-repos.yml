@@ -2,9 +2,6 @@ name: Sync individual repos
 
 on:
   push:
-    branches:
-      - main
-      - work
     paths:
       - framework/**
       - macro_packs/default/**
